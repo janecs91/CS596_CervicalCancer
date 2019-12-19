@@ -8,6 +8,7 @@ def load_data():
     show_missing = False
     show_mean_std = False
     show_correlation = False
+    show_feature_frequency = False
 
     # Load data
     file_name = "data/kag_risk_factors_cervical_cancer.csv"
@@ -22,7 +23,7 @@ def load_data():
     # numerical columns
     num_cols = data.columns.difference(bin_cols)
     #print(num_cols)
-    label_col = 'Dx:Cancer'
+    label_col = 'Biopsy'
 
     # Clean missing values
     data = data.replace('?', np.NaN)
@@ -57,7 +58,7 @@ def load_data():
             print("{}: {}".format(col, missing_values))
 
     # Columns with too much missing data
-    # These have 787 missing values out of 859 samples
+    # These have 787 missing values out of 858 samples
     bad_columns.extend(['STDs: Time since last diagnosis','STDs: Time since first diagnosis'])
 
     # Mean, Standard Deviation
@@ -84,17 +85,43 @@ def load_data():
         ax.matshow(corr)
         plt.xticks(range(len(corr.columns)), corr.columns, rotation='vertical')
         plt.yticks(range(len(corr.columns)), corr.columns)
+        plt.colorbar(plt.pcolor(corr))
 
     corrl = corr[label_col]
     corrl = corrl.abs().drop(label_col)
     corrl_sorted = corrl.sort_values(kind="quicksort", ascending=False)
     feature_sequence = list(corrl_sorted.index)
 
-    features_data = data[feature_sequence[0:]] #data.drop(columns=label_col)
+    features_data = data[feature_sequence] #data.drop(columns=label_col)
     label_data = data[label_col]
-    #print(features_data.columns)
+    print(features_data.columns)
+
+    if show_feature_frequency:
+        for i in range(11):
+            tfn = features_data.columns[i]
+            tfd = data[tfn]
+            tt = len(data)
+            #print(tt)
+            if tfn in bin_cols:
+                # bar graph
+                fd00 = len(data[(tfd<1)&(label_data<1)])
+                fd01 = len(data[(tfd<1)&(label_data>0)])
+                fd10 = len(data[(tfd>0)&(label_data<1)])
+                fd11 = len(data[(tfd>0)&(label_data>0)])
+                x= ['{}:0,\n {}:0'.format(tfn,label_col), '{}:0,\n {}:1'.format(tfn,label_col), '{}:1,\n {}:0'.format(tfn,label_col),
+                    '{}:1,\n {}:1'.format(tfn,label_col)]
+                y= [fd00, fd01, fd10, fd11]
+                for i, v in enumerate(y):
+                    plt.text(i, v, str(v))
+                plt.ylabel('Frequency')
+                plt.bar(x,y)
+                plt.show()
+            else:
+                # scatter
+                x= tfd
+                y= label_data
+                plt.scatter(x,y)
+                plt.xlabel(tfn)
+                plt.ylabel(label_col)
+                plt.show()
     return features_data, label_data
-
-
-
-    
